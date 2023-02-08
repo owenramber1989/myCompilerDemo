@@ -1,7 +1,14 @@
 # Token types
 # EOF (end-of-file) token is used to indicate that
 # there is no more input left for lexical analysis
-INTEGER, PLUS, MINUS, EOF = 'INTEGER', 'PLUS', 'MINUS', 'EOF'
+INTEGER, PLUS, MINUS, MULTIPLY, DEVISION, EOF = (
+    "INTEGER",
+    "PLUS",
+    "MINUS",
+    "MULTIPLY",
+    "DEVISION",
+    "EOF",
+)
 
 
 class Token(object):
@@ -18,10 +25,7 @@ class Token(object):
             Token(INTEGER, 3)
             Token(PLUS '+')
         """
-        return 'Token({type}, {value})'.format(
-            type=self.type,
-            value=repr(self.value)
-        )
+        return "Token({type}, {value})".format(type=self.type, value=repr(self.value))
 
     def __repr__(self):
         return self.__str__()
@@ -38,7 +42,7 @@ class Interpreter(object):
         self.current_char = self.text[self.pos]
 
     def error(self):
-        raise Exception('Error parsing input')
+        raise Exception("Error parsing input")
 
     def advance(self):
         """Advance the 'pos' pointer and set the 'current_char' variable."""
@@ -54,7 +58,7 @@ class Interpreter(object):
 
     def integer(self):
         """Return a (multidigit) integer consumed from the input."""
-        result = ''
+        result = ""
         while self.current_char is not None and self.current_char.isdigit():
             result += self.current_char
             self.advance()
@@ -75,14 +79,21 @@ class Interpreter(object):
             if self.current_char.isdigit():
                 return Token(INTEGER, self.integer())
 
-            if self.current_char == '+':
+            if self.current_char == "+":
                 self.advance()
-                return Token(PLUS, '+')
+                return Token(PLUS, "+")
 
-            if self.current_char == '-':
+            if self.current_char == "-":
                 self.advance()
-                return Token(MINUS, '-')
+                return Token(MINUS, "-")
 
+            if self.current_char == "*":
+                self.advance()
+                return Token(MULTIPLY, "*")
+
+            if self.current_char == "/":
+                self.advance()
+                return Token(DEVISION, "/")
             self.error()
 
         return Token(EOF, None)
@@ -105,21 +116,32 @@ class Interpreter(object):
         """
         # set current token to the first token taken from the input
         self.current_token = self.get_next_token()
-
         # we expect the current token to be an integer
         left = self.current_token
         self.eat(INTEGER)
-
+        result = left.value
         # we expect the current token to be either a '+' or '-'
         op = self.current_token
-        if op.type == PLUS:
-            self.eat(PLUS)
-        else:
-            self.eat(MINUS)
-
+        while op.type == PLUS or op.type == MINUS:
+            if op.type == PLUS:
+                self.eat(PLUS)
+                right = self.current_token
+                result += right.value
+                self.eat(INTEGER)
+            if op.type == MINUS:
+                self.eat(MINUS)
+                right = self.current_token
+                result -= right.value
+                self.eat(INTEGER)
+            if op.type != MINUS and op.type != PLUS:
+                return result
+            op = self.current_token
+        if op.type == MULTIPLY:
+            self.eat(MULTIPLY)
+        if op.type == DEVISION:
+            self.eat(DEVISION)
         # we expect the current token to be an integer
         right = self.current_token
-        self.eat(INTEGER)
         # after the above call the self.current_token is set to
         # EOF token
 
@@ -128,17 +150,17 @@ class Interpreter(object):
         # has been successfully found and the method can just
         # return the result of adding or subtracting two integers,
         # thus effectively interpreting client input
-        if op.type == PLUS:
-            result = left.value + right.value
-        else:
-            result = left.value - right.value
+        if op.type == MULTIPLY:
+            result = left.value * right.value
+        if op.type == DEVISION:
+            result = left.value / right.value
         return result
 
 
 def main():
     while True:
         try:
-            text = input('calc> ')
+            text = input("calc> ")
         except EOFError:
             break
         if not text:
@@ -148,5 +170,5 @@ def main():
         print(result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
