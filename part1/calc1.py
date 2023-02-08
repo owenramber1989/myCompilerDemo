@@ -2,7 +2,7 @@
 #
 # EOF (end-of-file) token is used to indicate that
 # there is no more input left for lexical analysis
-INTEGER, PLUS, EOF = "INTEGER", "PLUS", "EOF"
+INTEGER, PLUS, EOF, BS = "INTEGER", "PLUS", "EOF", "BS"
 
 
 class Token(object):
@@ -69,6 +69,11 @@ class Interpreter(object):
             self.pos += 1
             return token
 
+        if current_char.isspace():
+            token = Token(BS, current_char)
+            self.pos += 1
+            return token
+
         self.error()
 
     def eat(self, token_type):
@@ -86,19 +91,22 @@ class Interpreter(object):
         # set current token to the first token taken from the input
         self.current_token = self.get_next_token()
         left = self.current_token
-        while self.current_token.type != PLUS:
+        while self.current_token.type == INTEGER:
             self.current_token = self.get_next_token()
-            if self.current_token.type == PLUS:
+            if self.current_token.type == PLUS or self.current_token.type == BS:
                 break
             left.value = left.value * 10 + self.current_token.value
         # we expect the current token to be a single-digit integer
         # we expect the current token to be a '+' token
+        while self.current_token.type == BS:
+            self.current_token = self.get_next_token()
         op = self.current_token
         self.eat(PLUS)
-
+        while self.current_token.type == BS:
+            self.current_token = self.get_next_token()
         # we expect the current token to be a single-digit integer
         right = self.current_token
-        while self.current_token.type != EOF:
+        while self.current_token.type == INTEGER:
             self.current_token = self.get_next_token()
             if self.current_token.type == EOF:
                 break
